@@ -26,111 +26,20 @@ package com.gazbert.bxbot.strategies;
 import com.gazbert.bxbot.strategy.api.StrategyConfig;
 import com.gazbert.bxbot.strategy.api.StrategyException;
 import com.gazbert.bxbot.strategy.api.TradingStrategy;
-import com.gazbert.bxbot.trading.api.ExchangeNetworkException;
-import com.gazbert.bxbot.trading.api.Market;
-import com.gazbert.bxbot.trading.api.MarketOrder;
-import com.gazbert.bxbot.trading.api.MarketOrderBook;
-import com.gazbert.bxbot.trading.api.OpenOrder;
-import com.gazbert.bxbot.trading.api.OrderType;
-import com.gazbert.bxbot.trading.api.TradingApi;
-import com.gazbert.bxbot.trading.api.TradingApiException;
+import com.gazbert.bxbot.trading.api.*;
 import com.google.common.base.MoreObjects;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
-import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 
-/**
- * This is a very simple <a
- * href="http://www.investopedia.com/articles/trading/02/081902.asp">scalping strategy</a> to show
- * how to use the Trading API; you will want to code a much better algorithm! It trades using <a
- * href="http://www.investopedia.com/terms/l/limitorder.asp">limit orders</a> at the <a
- * href="http://www.investopedia.com/terms/s/spotprice.asp">spot price</a>.
- *
- * <p><strong> DISCLAIMER: This algorithm is provided as-is; it might have bugs in it and you could
- * lose money. Use it at our own risk! </strong>
- *
- * <p>It was originally written to trade on <a href="https://btc-e.com">BTC-e</a>, but should work
- * for any exchange. The algorithm will start by buying the base currency (BTC in this example)
- * using the counter currency (USD in this example), and then sell the base currency (BTC) at a
- * higher price to take profit from the spread. The algorithm expects you to have deposited
- * sufficient counter currency (USD) into your exchange wallet in order to buy the base currency
- * (BTC).
- *
- * <p>When it starts up, it places an order at the current BID price and uses x amount of counter
- * currency (USD) to 'buy' the base currency (BTC). The value of x comes from the sample
- * {project-root}/config/strategies.yaml 'counter-currency-buy-order-amount' config-item, currently
- * set to 20 USD. Make sure that the value you use for x is large enough to be able to meet the
- * minimum BTC order size for the exchange you are trading on, e.g. the Bitfinex min order size is
- * 0.01 BTC as of 3 May 2017. The algorithm then waits for the buy order to fill...
- *
- * <p>Once the buy order fills, it then waits until the ASK price is at least y % higher than the
- * previous buy fill price. The value of y comes from the sample
- * {project-root}/config/strategies.yaml 'minimum-percentage-gain' config-item, currently set to 1%.
- * Once the % gain has been achieved, the algorithm will place a sell order at the current ASK
- * price. It then waits for the sell order to fill... and the cycle repeats.
- *
- * <p>The algorithm does not factor in being outbid when placing buy orders, i.e. it does not cancel
- * the current order and place a new order at a higher price; it simply holds until the current BID
- * price falls again. Likewise, the algorithm does not factor in being undercut when placing sell
- * orders; it does not cancel the current order and place a new order at a lower price.
- *
- * <p>Chances are you will either get a stuck buy order if the market is going up, or a stuck sell
- * order if the market goes down. You could manually execute the trades on the exchange and restart
- * the bot to get going again... but a much better solution would be to modify this code to deal
- * with it: cancel your current buy order and place a new order matching the current BID price, or
- * cancel your current sell order and place a new order matching the current ASK price. The {@link
- * TradingApi} allows you to add this behaviour.
- *
- * <p>Remember to include the correct exchange fees (both buy and sell) in your buy/sell
- * calculations when you write your own algorithm. Otherwise, you'll end up bleeding fiat/crypto to
- * the exchange...
- *
- * <p>This demo algorithm relies on the {project-root}/config/strategies.yaml
- * 'minimum-percentage-gain' config-item value being high enough to make a profit and cover the
- * exchange fees. You could tweak the algo to call the {@link
- * com.gazbert.bxbot.trading.api.TradingApi#getPercentageOfBuyOrderTakenForExchangeFee(String)} and
- * {@link
- * com.gazbert.bxbot.trading.api.TradingApi#getPercentageOfSellOrderTakenForExchangeFee(String)}
- * when calculating the order to send to the exchange... See the sample
- * {project-root}/config/samples/{exchange}/exchange.yaml files for info on the different exchange
- * fees.
- *
- * <p>You configure the loading of your strategy using either a className OR a beanName in the
- * {project-root}/config/strategies.yaml config file. This example strategy is configured using the
- * bean-name and by setting the @Component("exampleScalpingStrategy") annotation - this results in
- * Spring injecting the bean - see <a
- * href="https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/stereotype/Component.html">
- * Spring docs</a> for more details. Alternatively, you can load your strategy using className -
- * this will use the bot's custom injection framework. The choice is yours, but beanName is the way
- * to go if you want to use other Spring features in your strategy, e.g. a <a
- * href="https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/stereotype/Repository.html">
- * Repository</a> to store your trade data.
- *
- * <p>The algorithm relies on config from the sample {project-root}/config/strategies.yaml and
- * {project-root}/config/markets.yaml files. You can pass additional configItems to your Strategy
- * using the {project-root}/config/strategies.yaml file - you access it from the {@link
- * #init(TradingApi, Market, StrategyConfig)} method via the StrategyConfigImpl argument.
- *
- * <p>This simple demo algorithm only manages 1 order at a time to keep things simple.
- *
- * <p>The Trading Engine will only send 1 thread through your strategy code at a time - you do not
- * have to code for concurrency.
- *
- * <p>This <a
- * href="http://www.investopedia.com/articles/active-trading/101014/basics-algorithmic-trading-concepts-and-examples.asp">
- * site</a> might give you a few ideas - the {@link TradingApi} provides a basic Ticker that you
- * might want to use. Check out the excellent [ta4j](https://github.com/ta4j/ta4j) project too.
- *
- * <p>Good luck!
- *
- * @author gazbert
- */
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.util.List;
+
+
 @Component("exampleScalpingStrategy") // used to load the strategy using Spring bean injection
-public class ExampleScalpingStrategy implements TradingStrategy {
+public class ScalpingStopLossStrategy implements TradingStrategy {
 
   private static final Logger LOG = LogManager.getLogger();
 
@@ -146,17 +55,14 @@ public class ExampleScalpingStrategy implements TradingStrategy {
   /** The state of the order. */
   private OrderState lastOrder;
 
-  /**
-   * The counter currency amount to use when placing the buy order. This was loaded from the
-   * strategy entry in the {project-root}/config/strategies.yaml config file.
-   */
-  private BigDecimal counterCurrencyBuyOrderAmount;
 
-  /**
-   * The minimum % gain was to achieve before placing a SELL oder. This was loaded from the strategy
-   * entry in the {project-root}/config/strategies.yaml config file.
-   */
-  private BigDecimal minimumPercentageGain;
+  private BigDecimal counterCurrencyBuyOrderAmount;
+  private BigDecimal minimoGuadagnoPerc;
+  private BigDecimal perditaMassimaPerc;
+  private BigDecimal perditaSottoMassimoPerc;
+  private BigDecimal highiestPriceReached = new BigDecimal(0);
+  private BigDecimal limiteInferioreDecisionSell = new BigDecimal(5);
+
 
   /**
    * Initialises the Trading Strategy. Called once by the Trading Engine when the bot starts up;
@@ -210,25 +116,13 @@ public class ExampleScalpingStrategy implements TradingStrategy {
       final BigDecimal currentBidPrice = buyOrders.get(0).getPrice();
       final BigDecimal currentAskPrice = sellOrders.get(0).getPrice();
 
-      LOG.info(
-              () ->
-                      market.getName()
-                              + " Current BID price="
-                              + new DecimalFormat(DECIMAL_FORMAT).format(currentBidPrice));
-      LOG.info(
-              () ->
-                      market.getName()
-                              + " Current ASK price="
-                              + new DecimalFormat(DECIMAL_FORMAT).format(currentAskPrice));
+      LOG.info(() ->market.getName()+" Current BID price="+ new DecimalFormat(DECIMAL_FORMAT).format(currentBidPrice));
+      LOG.info(() ->market.getName()+ " Current ASK price="+ new DecimalFormat(DECIMAL_FORMAT).format(currentAskPrice));
 
       // Is this the first time the Strategy has been called? If yes, we initialise the OrderState
       // so we can keep
       // track of orders during later trace cycles.
-      if (lastOrder == null) {
-        LOG.info(
-                () ->
-                        market.getName()
-                                + " First time Strategy has been called - creating new OrderState object.");
+      if (lastOrder == null) {LOG.info(() ->market.getName()+ " First time Strategy has been called - creating new OrderState object.");
         lastOrder = new OrderState();
       }
 
@@ -284,8 +178,7 @@ public class ExampleScalpingStrategy implements TradingStrategy {
     try {
       // Calculate the amount of base currency (BTC) to buy for given amount of counter currency
       // (USD).
-      final BigDecimal amountOfBaseCurrencyToBuy =
-              getAmountOfBaseCurrencyToBuyForGivenCounterCurrencyAmount(counterCurrencyBuyOrderAmount);
+      final BigDecimal amountOfBaseCurrencyToBuy = getAmountOfBaseCurrencyToBuyForGivenCounterCurrencyAmount(counterCurrencyBuyOrderAmount);
 
       // Send the order to the exchange
       LOG.info(() -> market.getName() + " Sending initial BUY order to exchange --->");
@@ -350,85 +243,90 @@ public class ExampleScalpingStrategy implements TradingStrategy {
 
       // If the order is not there, it must have all filled.
       if (!lastOrderFound) {
-        LOG.info(
-                () ->
-                        market.getName()
-                                + " ^^^ Yay!!! Last BUY Order Id ["
-                                + lastOrder.id
-                                + "] filled at ["
-                                + lastOrder.price
-                                + "]");
+        LOG.info(() ->market.getName()+ " Ultimo ordine ["+ lastOrder.id+ "] al prezzo di ["+ lastOrder.price+ "]");
 
-        /*
-         * The last buy order was filled, so lets see if we can send a new sell order.
-         *
-         * IMPORTANT - new sell order ASK price must be > (last order price + exchange fees)
-         *             because:
-         *
-         * 1. If we put sell amount in as same amount as previous buy, the exchange barfs because
-         *    we don't have enough units to cover the transaction fee.
-         * 2. We could end up selling at a loss.
-         *
-         * For this example strategy, we're just going to add 2% (taken from the
-         * 'minimum-percentage-gain' config item in the {project-root}/config/strategies.yaml
-         * config file) on top of previous bid price to make a little profit and cover the exchange
-         * fees.
-         *
-         * Your algo will have other ideas on how much profit to make and when to apply the
-         * exchange fees - you could try calling the
-         * TradingApi#getPercentageOfBuyOrderTakenForExchangeFee() and
-         * TradingApi#getPercentageOfSellOrderTakenForExchangeFee() when calculating the order to
-         * send to the exchange...
+/**
+ * Qui devo verificare in che caso siamo, 3 scenari
+ * 1) se stiamo andando sotto come prezzo rispetto a quanto abbiamo comprato bisogna vendere entro la percentuale messa impostata,
+ * - Se stiamo salendo dobbiamo:
+ *    -2) Verificare di aver raggiunto il target
+ *    - Verificare se abbiamo raggiunto prezzo massimo e stiamo già scendendo, se si verificare se stiamo perdendo troppo
+ *
+ */
+        BigDecimal currentPriceAsk = tradingApi.getTicker(market.getId()).getAsk();
+        LOG.info("L'attuale prezzo di vendita è: {}",currentPriceAsk);
+
+        /**
+         * Scenario 1:
          */
-        LOG.info(
-                () ->
-                        market.getName()
-                                + " Percentage profit (in decimal) to make for the sell order is: "
-                                + minimumPercentageGain);
+        if(currentPriceAsk.compareTo(lastOrder.price)<0){
+          LOG.warn("Siamo in zona di perdita, verifichiamo se è arrivato il momento di vendere");
 
-        final BigDecimal amountToAdd = lastOrder.price.multiply(minimumPercentageGain);
-        LOG.info(
-                () -> market.getName() + " Amount to add to last buy order fill price: " + amountToAdd);
+          //prezzo al quale abbiamo comprato - minima perdita/100 * prezzo al quale abbiamo comprato
+          BigDecimal stopLossPrice = lastOrder.price.subtract(perditaMassimaPerc.multiply(lastOrder.price));
+          LOG.info("Prezzo di perdita massima è: {} al momento siamo a: ",stopLossPrice,currentPriceAsk);
 
-        // Most exchanges (if not all) use 8 decimal places.
-        // It's usually best to round up the ASK price in your calculations to maximise gains.
-        final BigDecimal newAskPrice =
-                lastOrder.price.add(amountToAdd).setScale(8, RoundingMode.HALF_UP);
-        LOG.info(
-                () ->
-                        market.getName()
-                                + " Placing new SELL order at ask price ["
-                                + new DecimalFormat(DECIMAL_FORMAT).format(newAskPrice)
-                                + "]");
+          if(stopLossPrice.compareTo(currentPriceAsk)<0){
+            LOG.info("Ok non è ancora il momento di vendere, la perdita è inferiore a quanto configurato: ");
+          }else {
+            LOG.info("La perdita ha superato il tollerabile occorre vendere al meno {} come configurato");
+            BigDecimal newAskPrice = lastOrder.price.subtract(perditaMassimaPerc.add(limiteInferioreDecisionSell).multiply(lastOrder.price));
+            LOG.info("Sto per inviare un ordine di vendita al prezzo: {}",newAskPrice);
 
-        LOG.info(() -> market.getName() + " Sending new SELL order to exchange --->");
+            lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.SELL, lastOrder.amount, newAskPrice);
+            LOG.info(() -> market.getName() + " Ordine inviato. ID: " + lastOrder.id);
 
-        // Build the new sell order
-        lastOrder.id =
-                tradingApi.createOrder(market.getId(), OrderType.SELL, lastOrder.amount, newAskPrice);
-        LOG.info(() -> market.getName() + " New SELL Order sent successfully. ID: " + lastOrder.id);
 
-        // update last order state
-        lastOrder.price = newAskPrice;
-        lastOrder.type = OrderType.SELL;
-      } else {
+          }
 
-        /*
-         * BUY order has not filled yet.
-         * Could be nobody has jumped on it yet... or the order is only part filled... or market
-         * has gone up and we've been outbid and have a stuck buy order. In which case, we have to
-         * wait for the market to fall for the order to fill... or you could tweak this code to
-         * cancel the current order and raise your bid - remember to deal with any part-filled
-         * orders!
-         */
-        LOG.info(
-                () ->
-                        market.getName()
-                                + " !!! Still have BUY Order "
-                                + lastOrder.id
-                                + " waiting to fill at ["
-                                + lastOrder.price
-                                + "] - holding last BUY order...");
+
+        }else if(currentPriceAsk.compareTo(lastOrder.price)>0) {{
+          LOG.info("Il prezzo sta salendo, bene verifica se si ha raggiunt il guadagno necessario...");
+
+          //prezzo al quale abbiamo comprato - minima perdita/100 * prezzo al quale abbiamo comprato
+          BigDecimal guadagnoMinimo = lastOrder.price.add(minimoGuadagnoPerc.multiply(lastOrder.price));
+          LOG.info("Il prezzo minimo di guadagno è: {} al momento siamo a: ",guadagnoMinimo,currentPriceAsk);
+
+          if(guadagnoMinimo.compareTo(currentPriceAsk)<0){
+            LOG.info("Ok non è ancora il momento di vendere, il guadagno non è ancora stato raggiunto ");
+          }else {
+            LOG.info("Il valore massimo attualmente è arrivato a : {}",highiestPriceReached);
+            if(highiestPriceReached.compareTo(currentPriceAsk)<0){
+              LOG.info("il massimo è stato superato lo aggiorno");
+              highiestPriceReached = currentPriceAsk;
+            }else {
+              LOG.info("Prezzo attuale in discesa rispetto al massimo verifico se è il caso di vendere...");
+              BigDecimal prezzoSottoMinimo = highiestPriceReached.subtract(perditaSottoMassimoPerc.multiply(highiestPriceReached));
+              LOG.info("Il al quale attualmente dobbiamo vendere è: {} mentre il prezzo attuale è ",prezzoSottoMinimo,currentPriceAsk);
+              if(currentPriceAsk.compareTo(prezzoSottoMinimo)<0){
+                LOG.info("E' arrivato il momento di vendere piazzo un ordine ");
+                BigDecimal newAskPrice = highiestPriceReached.subtract(perditaMassimaPerc.subtract(limiteInferioreDecisionSell));
+                LOG.info("Sto per inviare un ordine di vendita al prezzo: {}",newAskPrice);
+
+                lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.SELL, lastOrder.amount, newAskPrice);
+                LOG.info(() -> market.getName() + " Ordine inviato. ID: " + lastOrder.id);
+              }
+
+
+            }
+
+            BigDecimal newAskPrice = highiestPriceReached.subtract(perditaSottoMassimoPerc.add(limiteInferioreDecisionSell).multiply(highiestPriceReached));
+            LOG.info("Sto per inviare un ordine di vendita al prezzo: {}",newAskPrice);
+
+            lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.SELL, lastOrder.amount, newAskPrice);
+            LOG.info(() -> market.getName() + " Ordine inviato. ID: " + lastOrder.id);
+
+
+          }
+
+
+        }
+
+        }
+
+
+
+
       }
 
     } catch (ExchangeNetworkException e) {
@@ -436,13 +334,7 @@ public class ExampleScalpingStrategy implements TradingStrategy {
       // actually
       // made it to the exchange? And if not, resend it...
       // We are just going to log it and swallow it, and wait for next trade cycle.
-      LOG.error(
-              () ->
-                      market.getName()
-                              + " New Order to SELL base currency failed because Exchange threw network "
-                              + "exception. Waiting until next trade cycle. Last Order: "
-                              + lastOrder,
-              e);
+      LOG.error(() ->market.getName()+ " New Order to SELL base currency failed because Exchange threw network "+ "exception. Waiting until next trade cycle. Last Order: "+ lastOrder,e);
 
     } catch (TradingApiException e) {
       // Your error handling code could go here...
@@ -482,40 +374,12 @@ public class ExampleScalpingStrategy implements TradingStrategy {
       }
 
       // If the order is not there, it must have all filled.
-      if (!lastOrderFound) {
-        LOG.info(
-                () ->
-                        market.getName()
-                                + " ^^^ Yay!!! Last SELL Order Id ["
-                                + lastOrder.id
-                                + "] filled at ["
-                                + lastOrder.price
-                                + "]");
+      if (!lastOrderFound) {LOG.info(() ->market.getName()+ " ^^^ Yay!!! Last SELL Order Id ["+ lastOrder.id+ "] filled at ["+ lastOrder.price+ "]");
 
-        // Get amount of base currency (BTC) we can buy for given counter currency (USD) amount.
-        final BigDecimal amountOfBaseCurrencyToBuy =
-                getAmountOfBaseCurrencyToBuyForGivenCounterCurrencyAmount(
-                        counterCurrencyBuyOrderAmount);
 
-        LOG.info(
-                () ->
-                        market.getName()
-                                + " Placing new BUY order at bid price ["
-                                + new DecimalFormat(DECIMAL_FORMAT).format(currentBidPrice)
-                                + "]");
+        LOG.info(() ->"Niente da fare qui, quello che è stato venduto è stato venduto il bot al momento gira a vuoto");
 
-        LOG.info(() -> market.getName() + " Sending new BUY order to exchange --->");
 
-        // Send the buy order to the exchange.
-        lastOrder.id =
-                tradingApi.createOrder(
-                        market.getId(), OrderType.BUY, amountOfBaseCurrencyToBuy, currentBidPrice);
-        LOG.info(() -> market.getName() + " New BUY Order sent successfully. ID: " + lastOrder.id);
-
-        // update last order details
-        lastOrder.price = currentBidPrice;
-        lastOrder.type = OrderType.BUY;
-        lastOrder.amount = amountOfBaseCurrencyToBuy;
       } else {
 
         /*
@@ -527,34 +391,13 @@ public class ExampleScalpingStrategy implements TradingStrategy {
          * part-filled orders!
          */
         if (currentAskPrice.compareTo(lastOrder.price) < 0) {
-          LOG.info(
-                  () ->
-                          market.getName()
-                                  + " <<< Current ask price ["
-                                  + currentAskPrice
-                                  + "] is LOWER then last order price ["
-                                  + lastOrder.price
-                                  + "] - holding last SELL order...");
+          LOG.warn(() ->market.getName()+ " <<< Grosso problema ["+ currentAskPrice+ "] è più basso dell'ordine di vendita ["+ lastOrder.price+ "] - il mercato è andato giù occorre fare qualcosa!!!");
 
         } else if (currentAskPrice.compareTo(lastOrder.price) > 0) {
-          LOG.error(
-                  () ->
-                          market.getName()
-                                  + " >>> Current ask price ["
-                                  + currentAskPrice
-                                  + "] is HIGHER than last order price ["
-                                  + lastOrder.price
-                                  + "] - IMPOSSIBLE! BX-bot must have sold?????");
+          LOG.error(() ->market.getName()+ " >>> Current ask price ["+ currentAskPrice+ "] is HIGHER than last order price ["+ lastOrder.price+ "] - IMPOSSIBLE! BX-bot must have sold?????");
 
         } else if (currentAskPrice.compareTo(lastOrder.price) == 0) {
-          LOG.info(
-                  () ->
-                          market.getName()
-                                  + " === Current ask price ["
-                                  + currentAskPrice
-                                  + "] is EQUAL to last order price ["
-                                  + lastOrder.price
-                                  + "] - holding last SELL order...");
+          LOG.info(() ->market.getName()+ " === Current ask price ["+ currentAskPrice+ "] is EQUAL to last order price ["+ lastOrder.price+ "] - holding last SELL order...");
         }
       }
     } catch (ExchangeNetworkException e) {
@@ -644,51 +487,56 @@ public class ExampleScalpingStrategy implements TradingStrategy {
   }
 
   /**
-   * Loads the config for the strategy. We expect the 'counter-currency-buy-order-amount' and
-   * 'minimum-percentage-gain' config items to be present in the
-   * {project-root}/config/strategies.yaml config file.
-   *
-   * @param config the config for the Trading Strategy.
+   * Init della strategia
+   * @param config
    */
   private void getConfigForStrategy(StrategyConfig config) {
 
     // Get counter currency buy amount...
-    final String counterCurrencyBuyOrderAmountFromConfigAsString =
-            config.getConfigItem("counter-currency-buy-order-amount");
-
+    final String counterCurrencyBuyOrderAmountFromConfigAsString = config.getConfigItem("counter-currency-buy-order-amount");
     if (counterCurrencyBuyOrderAmountFromConfigAsString == null) {
-      // game over
-      throw new IllegalArgumentException(
-              "Mandatory counter-currency-buy-order-amount value missing in strategy.xml config.");
+      throw new IllegalArgumentException("Mandatory counter-currency-buy-order-amount value missing in strategy.xml config.");
     }
-    LOG.info(
-            () ->
-                    "<counter-currency-buy-order-amount> from config is: "
-                            + counterCurrencyBuyOrderAmountFromConfigAsString);
-
-    // Will fail fast if value is not a number
+    LOG.info(() ->"<counter-currency-buy-order-amount> from config is: "+ counterCurrencyBuyOrderAmountFromConfigAsString);
     counterCurrencyBuyOrderAmount = new BigDecimal(counterCurrencyBuyOrderAmountFromConfigAsString);
     LOG.info(() -> "counterCurrencyBuyOrderAmount: " + counterCurrencyBuyOrderAmount);
 
-    // Get min % gain...
-    final String minimumPercentageGainFromConfigAsString =
-            config.getConfigItem("minimum-percentage-gain");
-    if (minimumPercentageGainFromConfigAsString == null) {
-      // game over
-      throw new IllegalArgumentException(
-              "Mandatory minimum-percentage-gain value missing in strategy.xml config.");
+    //guadagno minimo
+    final String guadagnoMinimoString = config.getConfigItem("guadagno-minimo");
+    if (guadagnoMinimoString == null) {
+      throw new IllegalArgumentException("Mandatory guadagno-minimo value missing in strategy.xml config.");
     }
-    LOG.info(
-            () ->
-                    "<minimum-percentage-gain> from config is: " + minimumPercentageGainFromConfigAsString);
+    LOG.info(() ->"<guadagno-minimo> from config is: "+ guadagnoMinimoString);
+    BigDecimal minGuadConfig = new BigDecimal(guadagnoMinimoString);
+    minimoGuadagnoPerc = minGuadConfig.divide(new BigDecimal(100), 8, RoundingMode.HALF_UP);
+    LOG.info(() -> "minimoGuadagno: " + minimoGuadagnoPerc);
 
-    // Will fail fast if value is not a number
-    final BigDecimal minimumPercentageGainFromConfig =
-            new BigDecimal(minimumPercentageGainFromConfigAsString);
-    minimumPercentageGain =
-            minimumPercentageGainFromConfig.divide(new BigDecimal(100), 8, RoundingMode.HALF_UP);
 
-    LOG.info(() -> "minimumPercentageGain in decimal is: " + minimumPercentageGain);
+    //perdita massima
+    final String perditaMassimaString = config.getConfigItem("perdita-massima");
+    if (perditaMassimaString == null) {
+      throw new IllegalArgumentException("Mandatory perdita-massima value missing in strategy.xml config.");
+    }
+    LOG.info(() ->"<perdita-massima> from config is: "+ perditaMassimaString);
+    BigDecimal perditaMaxConfig = new BigDecimal(perditaMassimaString);
+    perditaMassimaPerc = perditaMaxConfig.divide(new BigDecimal(100), 8, RoundingMode.HALF_UP);
+    LOG.info(() -> "perditaMassima: " + perditaMassimaPerc);
+
+
+    //perdita sotto massimo
+    final String perditaSottoMassimoString = config.getConfigItem("perdita-sotto-massimo");
+    if (perditaSottoMassimoString == null) {
+      throw new IllegalArgumentException("Mandatory perdita-sotto-massimo value missing in strategy.xml config.");
+    }
+    LOG.info(() ->"<perdita-sotto-massimo> from config is: "+ perditaSottoMassimoString);
+    BigDecimal perditaSottoMax = new BigDecimal(perditaSottoMassimoString);
+    perditaSottoMassimoPerc = perditaSottoMax.divide(new BigDecimal(100), 8, RoundingMode.HALF_UP);
+    LOG.info(() -> "perditaSottoMassimo: " + perditaSottoMassimoPerc);
+
+
+
+
+
   }
 
   /**
@@ -712,8 +560,12 @@ public class ExampleScalpingStrategy implements TradingStrategy {
     /** Price to buy/sell at - default to zero. */
     private BigDecimal price = BigDecimal.ZERO;
 
+    private BigDecimal highiestPriceReached = BigDecimal.ZERO;
+
     /** Number of units to buy/sell - default to zero. */
     private BigDecimal amount = BigDecimal.ZERO;
+
+
 
     @Override
     public String toString() {
