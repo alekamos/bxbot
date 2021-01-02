@@ -26,22 +26,16 @@ package com.gazbert.bxbot.strategies;
 import com.gazbert.bxbot.strategy.api.StrategyConfig;
 import com.gazbert.bxbot.strategy.api.StrategyException;
 import com.gazbert.bxbot.strategy.api.TradingStrategy;
-import com.gazbert.bxbot.trading.api.ExchangeNetworkException;
-import com.gazbert.bxbot.trading.api.Market;
-import com.gazbert.bxbot.trading.api.MarketOrder;
-import com.gazbert.bxbot.trading.api.MarketOrderBook;
-import com.gazbert.bxbot.trading.api.OpenOrder;
-import com.gazbert.bxbot.trading.api.OrderType;
-import com.gazbert.bxbot.trading.api.TradingApi;
-import com.gazbert.bxbot.trading.api.TradingApiException;
+import com.gazbert.bxbot.trading.api.*;
 import com.google.common.base.MoreObjects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.stereotype.Component;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.stereotype.Component;
 
 /**
  * This is a very simple <a
@@ -92,9 +86,9 @@ import org.springframework.stereotype.Component;
  * <p>This demo algorithm relies on the {project-root}/config/strategies.yaml
  * 'minimum-percentage-gain' config-item value being high enough to make a profit and cover the
  * exchange fees. You could tweak the algo to call the {@link
- * com.gazbert.bxbot.trading.api.TradingApi#getPercentageOfBuyOrderTakenForExchangeFee(String)} and
+ * TradingApi#getPercentageOfBuyOrderTakenForExchangeFee(String)} and
  * {@link
- * com.gazbert.bxbot.trading.api.TradingApi#getPercentageOfSellOrderTakenForExchangeFee(String)}
+ * TradingApi#getPercentageOfSellOrderTakenForExchangeFee(String)}
  * when calculating the order to send to the exchange... See the sample
  * {project-root}/config/samples/{exchange}/exchange.yaml files for info on the different exchange
  * fees.
@@ -130,7 +124,7 @@ import org.springframework.stereotype.Component;
  * @author gazbert
  */
 @Component("exampleScalpingStrategy") // used to load the strategy using Spring bean injection
-public class ExampleScalpingStrategy implements TradingStrategy {
+public class OldStrategy implements TradingStrategy {
 
   private static final Logger LOG = LogManager.getLogger();
 

@@ -168,57 +168,11 @@ public class ScalpingStopLossStrategy implements TradingStrategy {
    */
   private void executeAlgoForWhenLastOrderWasNone(BigDecimal currentBidPrice)
           throws StrategyException {
-    LOG.info(
-            () ->
-                    market.getName()
-                            + " OrderType is NONE - placing new BUY order at ["
-                            + new DecimalFormat(DECIMAL_FORMAT).format(currentBidPrice)
-                            + "]");
+    LOG.info(() ->market.getName()+ " Nessun ordine pre-esistente nulla da fare qui");
 
-    try {
-      // Calculate the amount of base currency (BTC) to buy for given amount of counter currency
-      // (USD).
-      final BigDecimal amountOfBaseCurrencyToBuy = getAmountOfBaseCurrencyToBuyForGivenCounterCurrencyAmount(counterCurrencyBuyOrderAmount);
 
-      // Send the order to the exchange
-      LOG.info(() -> market.getName() + " Sending initial BUY order to exchange --->");
-
-      lastOrder.id =
-              tradingApi.createOrder(
-                      market.getId(), OrderType.BUY, amountOfBaseCurrencyToBuy, currentBidPrice);
-
-      LOG.info(
-              () -> market.getName() + " Initial BUY Order sent successfully. ID: " + lastOrder.id);
-
-      // update last order details
-      lastOrder.price = currentBidPrice;
-      lastOrder.type = OrderType.BUY;
-      lastOrder.amount = amountOfBaseCurrencyToBuy;
-
-    } catch (ExchangeNetworkException e) {
-      // Your timeout handling code could go here, e.g. you might want to check if the order
-      // actually made it to the exchange? And if not, resend it...
-      // We are just going to log it and swallow it, and wait for next trade cycle.
-      LOG.error(
-              () ->
-                      market.getName()
-                              + " Initial order to BUY base currency failed because Exchange threw network "
-                              + "exception. Waiting until next trade cycle.",
-              e);
-
-    } catch (TradingApiException e) {
-      // Your error handling code could go here...
-      // We are just going to re-throw as StrategyException for engine to deal with - it will
-      // shutdown the bot.
-      LOG.error(
-              () ->
-                      market.getName()
-                              + " Initial order to BUY base currency failed because Exchange threw TradingApi "
-                              + "exception. Telling Trading Engine to shutdown bot!",
-              e);
-      throw new StrategyException(e);
-    }
   }
+
 
   /**
    * Algo for executing when last order we placed on the exchanges was a BUY.
