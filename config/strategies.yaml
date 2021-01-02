@@ -44,4 +44,4 @@ strategies:
       counter-currency-buy-order-amount: 25
       guadagno-minimo: 1
       perdita-massima: 0.5
-      perdita-sotto-massimo: 0.25
+      perdita-sotto-massimo: 0.01

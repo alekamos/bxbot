@@ -51,7 +51,7 @@ public final class TestExchangeAdapter extends BitstampExchangeAdapter {
 
     BigDecimal bid = getTicker(marketId).getBid();
     //tolgo tipo il 0.2% da quest'ordine
-    BigDecimal prezzoBid = bid.subtract(new BigDecimal(0.02).multiply(bid));
+    BigDecimal prezzoBid = bid.add(new BigDecimal(0.007).multiply(bid));
 
     List<OpenOrder> orders = new ArrayList<>();
     final OpenOrder order =
@@ -60,7 +60,7 @@ public final class TestExchangeAdapter extends BitstampExchangeAdapter {
                     new Date(),
                     marketId,
                     OrderType.BUY,
-                    bid,
+                    prezzoBid,
                     new BigDecimal(0.0075),
                     null, // orig_quantity - not provided by stamp :-(
                     null
