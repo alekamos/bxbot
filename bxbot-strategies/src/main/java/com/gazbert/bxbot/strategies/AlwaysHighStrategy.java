@@ -38,8 +38,8 @@ import java.text.DecimalFormat;
 import java.util.List;
 
 
-@Component("exampleScalpingStrategy") // used to load the strategy using Spring bean injection
-public class ScalpingStopLossStrategy implements TradingStrategy {
+@Component("alwaysHighStrategy") // used to load the strategy using Spring bean injection
+public class AlwaysHighStrategy implements TradingStrategy {
 
   private static final Logger LOG = LogManager.getLogger();
 
@@ -167,8 +167,19 @@ public class ScalpingStopLossStrategy implements TradingStrategy {
    *     Throwing this exception indicates we want the Trading Engine to shutdown the bot.
    */
   private void executeAlgoForWhenLastOrderWasNone(BigDecimal currentBidPrice)
-          throws StrategyException {
-    LOG.info(() ->market.getName()+ " Nessun ordine pre-esistente nulla da fare qui");
+          throws StrategyException, TradingApiException, ExchangeNetworkException {
+    LOG.info(() ->market.getName()+ " Vediamo che ordini erano presenti..");
+    final List<OpenOrder> myOrders = tradingApi.getYourOpenOrders(market.getId());
+
+    //prendo l'ordine più recente //TODO solo in questo caso prendo l'ultimo
+
+
+
+
+    lastOrder.type = myOrders.get(0).getType();
+    lastOrder.price = myOrders.get(0).getPrice();
+    lastOrder.id = myOrders.get(0).getId();
+    lastOrder.amount = myOrders.get(0).getQuantity();
 
 
   }
@@ -196,7 +207,7 @@ public class ScalpingStopLossStrategy implements TradingStrategy {
       }
 
       // If the order is not there, it must have all filled.
-      if (!lastOrderFound) {
+      if (lastOrderFound) {
         LOG.info(() ->market.getName()+ " Ultimo ordine ["+ lastOrder.id+ "] al prezzo di ["+ lastOrder.price+ "]");
 
 /**

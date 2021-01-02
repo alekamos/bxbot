@@ -13,7 +13,7 @@ strategies:
 
   # A unique identifier for the strategy. The markets.yaml tradingStrategyId entries reference this.
   # Value must be an alphanumeric string. Underscores and dashes are also permitted. E.g. my-macd-strat-1
-  - id: scalping-strategy
+  - id: alwaysHighStrategy
 
     # A friendly name for the strategy.
     # Value must be an alphanumeric string. Spaces are allowed. E.g. My Super MACD Strat
@@ -28,7 +28,7 @@ strategies:
     # For the className value, you must specify the fully qualified name of your Strategy class for the
     # Trading Engine to load and execute. This class must be on the runtime classpath.
     # If you set this value to load your strategy, you cannot set the beanName value.
-    className: com.gazbert.bxbot.strategies.ExampleScalpingStrategy
+    className: com.gazbert.bxbot.strategies.AlwaysHighStrategy
 
     # For the beanName value, you must specify the Spring bean name of you Strategy component class
     # for the Trading Engine to load and execute.

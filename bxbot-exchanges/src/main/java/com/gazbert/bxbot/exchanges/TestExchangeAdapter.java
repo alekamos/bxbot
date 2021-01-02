@@ -24,15 +24,11 @@
 package com.gazbert.bxbot.exchanges;
 
 import com.gazbert.bxbot.exchanges.trading.api.impl.BalanceInfoImpl;
-import com.gazbert.bxbot.trading.api.BalanceInfo;
-import com.gazbert.bxbot.trading.api.OpenOrder;
-import com.gazbert.bxbot.trading.api.OrderType;
+import com.gazbert.bxbot.exchanges.trading.api.impl.OpenOrderImpl;
+import com.gazbert.bxbot.trading.api.*;
+
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Dummy Exchange adapter used to keep the bot up and running for engine and strategy testing.
@@ -50,8 +46,29 @@ public final class TestExchangeAdapter extends BitstampExchangeAdapter {
   private static final String DUMMY_BALANCE = "100.00";
 
   @Override
-  public List<OpenOrder> getYourOpenOrders(String marketId) {
-    return new ArrayList<>();
+  public List<OpenOrder> getYourOpenOrders(String marketId) throws TradingApiException, ExchangeNetworkException {
+
+
+    BigDecimal bid = getTicker(marketId).getBid();
+    //tolgo tipo il 0.2% da quest'ordine
+    BigDecimal prezzoBid = bid.subtract(new BigDecimal(0.02).multiply(bid));
+
+    List<OpenOrder> orders = new ArrayList<>();
+    final OpenOrder order =
+            new OpenOrderImpl(
+                    Long.toString(123456),
+                    new Date(),
+                    marketId,
+                    OrderType.BUY,
+                    bid,
+                    new BigDecimal(0.0075),
+                    null, // orig_quantity - not provided by stamp :-(
+                    null
+            );
+    orders.add(order);
+
+
+    return orders;
   }
 
   @Override
@@ -74,6 +91,7 @@ public final class TestExchangeAdapter extends BitstampExchangeAdapter {
     balancesAvailable.put("EUR", new BigDecimal(DUMMY_BALANCE));
     balancesAvailable.put("LTC", new BigDecimal(DUMMY_BALANCE));
     balancesAvailable.put("XRP", new BigDecimal(DUMMY_BALANCE));
+    balancesAvailable.put("XXBT", new BigDecimal(DUMMY_BALANCE));
 
     final Map<String, BigDecimal> balancesOnOrder = new HashMap<>();
     balancesOnOrder.put("BTC", new BigDecimal(DUMMY_BALANCE));
@@ -81,6 +99,7 @@ public final class TestExchangeAdapter extends BitstampExchangeAdapter {
     balancesOnOrder.put("EUR", new BigDecimal(DUMMY_BALANCE));
     balancesOnOrder.put("LTC", new BigDecimal(DUMMY_BALANCE));
     balancesOnOrder.put("XRP", new BigDecimal(DUMMY_BALANCE));
+    balancesOnOrder.put("XXBT", new BigDecimal(DUMMY_BALANCE));
 
     return new BalanceInfoImpl(balancesAvailable, balancesOnOrder);
   }
