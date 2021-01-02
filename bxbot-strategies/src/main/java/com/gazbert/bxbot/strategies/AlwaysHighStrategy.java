@@ -246,11 +246,11 @@ public class AlwaysHighStrategy implements TradingStrategy {
 
 
         }else if(currentPriceAsk.compareTo(lastOrder.price)>0) {{
-          LOG.info("Il prezzo sta salendo, bene verifica se si ha raggiunt il guadagno necessario...");
+          LOG.info("Il prezzo sta salendo, bene verifica se si è raggiunto il guadagno necessario del {} %",minimoGuadagnoPerc);
 
           //prezzo al quale abbiamo comprato - minima perdita/100 * prezzo al quale abbiamo comprato
           BigDecimal guadagnoMinimo = lastOrder.price.add(minimoGuadagnoPerc.multiply(lastOrder.price));
-          LOG.info("Il prezzo minimo di guadagno è: {} al momento siamo a: ",guadagnoMinimo,currentPriceAsk);
+          LOG.info("Il prezzo minimo di guadagno è: {} al momento siamo a: {}",guadagnoMinimo,currentPriceAsk);
 
           if(guadagnoMinimo.compareTo(currentPriceAsk)<0){
             LOG.info("Ok non è ancora il momento di vendere, il guadagno non è ancora stato raggiunto ");
@@ -259,27 +259,26 @@ public class AlwaysHighStrategy implements TradingStrategy {
             if(highiestPriceReached.compareTo(currentPriceAsk)<0){
               LOG.info("il massimo è stato superato lo aggiorno");
               highiestPriceReached = currentPriceAsk;
+              LOG.info("Massimo valore aggiornato a: {}",currentPriceAsk);
             }else {
               LOG.info("Prezzo attuale in discesa rispetto al massimo verifico se è il caso di vendere...");
               BigDecimal prezzoSottoMinimo = highiestPriceReached.subtract(perditaSottoMassimoPerc.multiply(highiestPriceReached));
-              LOG.info("Il al quale attualmente dobbiamo vendere è: {} mentre il prezzo attuale è ",prezzoSottoMinimo,currentPriceAsk);
+              LOG.info("Il prezzo al quale attualmente dobbiamo vendere è: {} mentre il prezzo attuale è {} ",prezzoSottoMinimo,currentPriceAsk);
               if(currentPriceAsk.compareTo(prezzoSottoMinimo)<0){
                 LOG.info("E' arrivato il momento di vendere piazzo un ordine ");
-                BigDecimal newAskPrice = highiestPriceReached.subtract(perditaMassimaPerc.subtract(limiteInferioreDecisionSell));
+                BigDecimal newAskPrice = highiestPriceReached.subtract(perditaMassimaPerc.add(limiteInferioreDecisionSell).multiply(highiestPriceReached));
                 LOG.info("Sto per inviare un ordine di vendita al prezzo: {}",newAskPrice);
 
                 lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.SELL, lastOrder.amount, newAskPrice);
                 LOG.info(() -> market.getName() + " Ordine inviato. ID: " + lastOrder.id);
+              }else{
+                LOG.info("Non sussistono le condizioni per vendere");
               }
 
 
             }
 
-            BigDecimal newAskPrice = highiestPriceReached.subtract(perditaSottoMassimoPerc.add(limiteInferioreDecisionSell).multiply(highiestPriceReached));
-            LOG.info("Sto per inviare un ordine di vendita al prezzo: {}",newAskPrice);
 
-            lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.SELL, lastOrder.amount, newAskPrice);
-            LOG.info(() -> market.getName() + " Ordine inviato. ID: " + lastOrder.id);
 
 
           }
