@@ -174,10 +174,10 @@ public class AlwaysHighStrategy implements TradingStrategy {
       final BigDecimal amountOfBaseCurrencyToBuy = getAmountOfBaseCurrencyToBuyForGivenCounterCurrencyAmount(counterCurrencyBuyOrderAmount);
 
       // Send the order to the exchange
-      BigDecimal newBidPrice = currentBidPrice.add(cuscinettoBuySell.multiply(currentBidPrice));
-      LOG.info("Sto per inviare un ordine di {} {} ovvero di {} {} al prezzo di: {}",new DecimalFormat(DECIMAL_FORMAT).format(amountOfBaseCurrencyToBuy),market.getBaseCurrency(),new DecimalFormat(DECIMAL_FORMAT).format(counterCurrencyBuyOrderAmount),market.getCounterCurrency(),new DecimalFormat(DECIMAL_FORMAT).format(newBidPrice));
 
-      lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.BUY, amountOfBaseCurrencyToBuy, newBidPrice);
+      LOG.info("Sto per inviare un ordine di {} {} ovvero di {} {} al prezzo di: {}",new DecimalFormat(DECIMAL_FORMAT).format(amountOfBaseCurrencyToBuy),market.getBaseCurrency(),new DecimalFormat(DECIMAL_FORMAT).format(counterCurrencyBuyOrderAmount),market.getCounterCurrency(),new DecimalFormat(DECIMAL_FORMAT).format(currentBidPrice));
+
+      lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.BUY, amountOfBaseCurrencyToBuy, currentBidPrice);
 
       LOG.info("Ordine eseguito con id: {} comprati {} {} al prezzo di {} {}",lastOrder.id,amountOfBaseCurrencyToBuy,market.getBaseCurrency(),currentBidPrice,market.getCounterCurrency());
 
@@ -261,9 +261,9 @@ public class AlwaysHighStrategy implements TradingStrategy {
           } else {
             LOG.info("La perdita ha superato il limite impostato..");
 
-            BigDecimal newAskPrice = lastOrder.price.subtract((perditaMassimaPerc.add(cuscinettoBuySell)).multiply(lastOrder.price));
-            LOG.info("Sto per inviare un ordine di vendita al prezzo: {}, di {} {}", new DecimalFormat(DECIMAL_FORMAT).format(newAskPrice), lastOrder.amount, market.getCounterCurrency());
-            lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.SELL, lastOrder.amount, newAskPrice);
+
+            LOG.info("Sto per inviare un ordine di vendita al prezzo: {}, di {} {}", new DecimalFormat(DECIMAL_FORMAT).format(currentAskPrice), lastOrder.amount, market.getCounterCurrency());
+            lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.SELL, lastOrder.amount, currentAskPrice);
             LOG.info(() -> market.getName() + " Ordine inviato. ID: " + lastOrder.id);
             BigDecimal pedita = (currentAskPrice.subtract(lastOrder.price)).multiply(lastOrder.amount);
             LOG.info("perdita con quest'azione abbiamo perso: {} {}", new DecimalFormat(DECIMAL_FORMAT).format(pedita), market.getCounterCurrency());
@@ -292,9 +292,8 @@ public class AlwaysHighStrategy implements TradingStrategy {
               LOG.info("Il prezzo al quale attualmente dobbiamo vendere è: {} mentre il prezzo attuale è {} ", new DecimalFormat(DECIMAL_FORMAT).format(prezzoSottoMinimo), currentAskPrice);
               if (currentAskPrice.compareTo(prezzoSottoMinimo) < 0) {
                 LOG.info("Scenario 4), vendita");
-                BigDecimal newAskPrice = highiestPriceReached.subtract((perditaMassimaPerc.add(cuscinettoBuySell)).multiply(highiestPriceReached));
-                LOG.info("Sto per inviare un ordine di vendita al prezzo: {}, di {} {}", new DecimalFormat(DECIMAL_FORMAT).format(newAskPrice), lastOrder.amount, market.getCounterCurrency());
-                lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.SELL, lastOrder.amount, newAskPrice);
+                LOG.info("Sto per inviare un ordine di vendita al prezzo: {}, di {} {}", new DecimalFormat(DECIMAL_FORMAT).format(currentAskPrice), lastOrder.amount, market.getCounterCurrency());
+                lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.SELL, lastOrder.amount, currentAskPrice);
                 LOG.info(() -> market.getName() + " Ordine inviato. ID: " + lastOrder.id);
                 BigDecimal guadagno = (currentAskPrice.subtract(lastOrder.price)).multiply(lastOrder.amount);
                 LOG.info("Guadagno con quest'azione abbiamo guadagnato: {} {}", new DecimalFormat(DECIMAL_FORMAT).format(guadagno), market.getCounterCurrency());
@@ -340,10 +339,48 @@ public class AlwaysHighStrategy implements TradingStrategy {
    * @throws StrategyException if an unexpected exception is received from the Exchange Adapter.
    *     Throwing this exception indicates we want the Trading Engine to shutdown the bot.
    */
-  private void executeAlgoForWhenLastOrderWasSell(
-          BigDecimal currentBidPrice, BigDecimal currentAskPrice) throws StrategyException {
+  private void executeAlgoForWhenLastOrderWasSell(BigDecimal currentBidPrice, BigDecimal currentAskPrice) throws StrategyException {
 
-    LOG.info(() ->"Niente da fare qui, quello che è stato venduto è stato venduto il bot al momento gira a vuoto");
+    try {
+      List<OpenOrder> myOrders = null;
+      myOrders = tradingApi.getYourOpenOrders(market.getId());
+
+      boolean isFilled = true;
+      for (OpenOrder myOrder : myOrders) {
+        if (myOrder.getId().equals(lastOrder.id)) {
+          isFilled=false;
+          LOG.info("Ordine con id: {} non ancora fillato, aspetto...",lastOrder.id);
+          break;
+
+        }
+      }
+
+
+      if(isFilled) {
+        LOG.info(() -> market.getName() + " Ultimo ordine [" + lastOrder.id + "] al prezzo di [" + new DecimalFormat(DECIMAL_FORMAT).format(lastOrder.price) + "]");
+        LOG.info(() ->"Niente da fare qui, quello che è stato venduto è stato venduto il bot al momento gira a vuoto");
+      }
+    } catch (ExchangeNetworkException e) {
+      // Your timeout handling code could go here, e.g. you might want to check if the order
+      // actually
+      // made it to the exchange? And if not, resend it...
+      // We are just going to log it and swallow it, and wait for next trade cycle.
+      LOG.error(() -> market.getName() + " New Order to SELL base currency failed because Exchange threw network " + "exception. Waiting until next trade cycle. Last Order: " + lastOrder, e);
+
+    } catch (TradingApiException e) {
+      // Your error handling code could go here...
+      // We are just going to re-throw as StrategyException for engine to deal with - it will
+      // shutdown the bot.
+      LOG.error(
+              () ->
+                      market.getName()
+                              + " New order to SELL base currency failed because Exchange threw TradingApi "
+                              + "exception. Telling Trading Engine to shutdown bot! Last Order: "
+                              + lastOrder,
+              e);
+      throw new StrategyException(e);
+    }
+
 
   }
 
