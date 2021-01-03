@@ -42,6 +42,6 @@ strategies:
     # is passed to your Trading Strategy when the bot starts up.
     configItems:
       counter-currency-buy-order-amount: 25
-      guadagno-minimo: 1
-      perdita-massima: 0.5
+      guadagno-minimo: 0.1
+      perdita-massima: 0.1
       perdita-sotto-massimo: 0.01

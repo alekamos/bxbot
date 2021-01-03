@@ -47,7 +47,7 @@ markets:
     #
     # The Kraken Exchange Balance API call always returns the currency short code in the X-ISO4217-A3 format, so you must
     # specify your codes the same way here. E.g. USD should be specified as 'ZUSD'.
-    counterCurrency: ZUSD
+    counterCurrency: ZEUR
 
     # The enabled value allows you toggle trading on the market - config changes are only applied on startup.
     enabled: true

@@ -27,7 +27,7 @@ engine:
   #
   # The Kraken Exchange Balance API call always returns the currency short code in the X-ISO4217-A3 format, so you must
   # specify your codes the same way here. E.g. XBT must be specified as 'XXBT'.
-  emergencyStopCurrency: EUR
+  emergencyStopCurrency: ZEUR
 
   # This must be set to prevent a catastrophic loss on the exchange.
   # The Trading Engine checks this value at the start of every trade cycle: if your emergencyStopCurrency balance on
@@ -40,4 +40,4 @@ engine:
   # while their API documentation might say one thing, the reality is you might get socket timeouts and 5XX responses if you
   # hit it too hard - you cannot perform ultra low latency trading over the public internet ;-)
   # You'll need to experiment with the trade cycle interval for different exchanges.
-  tradeCycleInterval: 10
+  tradeCycleInterval: 15
