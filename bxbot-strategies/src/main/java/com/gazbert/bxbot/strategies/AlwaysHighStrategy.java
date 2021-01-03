@@ -174,10 +174,10 @@ public class AlwaysHighStrategy implements TradingStrategy {
       final BigDecimal amountOfBaseCurrencyToBuy = getAmountOfBaseCurrencyToBuyForGivenCounterCurrencyAmount(counterCurrencyBuyOrderAmount);
 
       // Send the order to the exchange
-      BigDecimal nreBidPrice = currentBidPrice.add(cuscinettoBuySell.multiply(currentBidPrice));
-      LOG.info("Sto per inviare un ordine di {} {} ovvero di {} {} al prezzo di: {}",new DecimalFormat(DECIMAL_FORMAT).format(amountOfBaseCurrencyToBuy),market.getBaseCurrency(),new DecimalFormat(DECIMAL_FORMAT).format(counterCurrencyBuyOrderAmount),market.getCounterCurrency(),new DecimalFormat(DECIMAL_FORMAT).format(nreBidPrice));
+      BigDecimal newBidPrice = currentBidPrice.add(cuscinettoBuySell.multiply(currentBidPrice));
+      LOG.info("Sto per inviare un ordine di {} {} ovvero di {} {} al prezzo di: {}",new DecimalFormat(DECIMAL_FORMAT).format(amountOfBaseCurrencyToBuy),market.getBaseCurrency(),new DecimalFormat(DECIMAL_FORMAT).format(counterCurrencyBuyOrderAmount),market.getCounterCurrency(),new DecimalFormat(DECIMAL_FORMAT).format(newBidPrice));
 
-      lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.BUY, amountOfBaseCurrencyToBuy, currentBidPrice);
+      lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.BUY, amountOfBaseCurrencyToBuy, newBidPrice);
 
       LOG.info("Ordine eseguito con id: {} comprati {} {} al prezzo di {} {}",lastOrder.id,amountOfBaseCurrencyToBuy,market.getBaseCurrency(),currentBidPrice,market.getCounterCurrency());
 
@@ -218,9 +218,20 @@ public class AlwaysHighStrategy implements TradingStrategy {
 
 
     try {
+      List<OpenOrder> myOrders = tradingApi.getYourOpenOrders(market.getId());
+      boolean isFilled = true;
+      for (OpenOrder myOrder : myOrders) {
+        if (myOrder.getId().equals(lastOrder.id)) {
+          isFilled=false;
+          LOG.info("Ordine con id: {} non ancora fillato, aspetto...",lastOrder.id);
+          break;
+
+        }
+      }
 
 
-      LOG.info(() -> market.getName() + " Ultimo ordine [" + lastOrder.id + "] al prezzo di [" + new DecimalFormat(DECIMAL_FORMAT).format(lastOrder.price) + "]");
+      if(isFilled) {
+        LOG.info(() -> market.getName() + " Ultimo ordine [" + lastOrder.id + "] al prezzo di [" + new DecimalFormat(DECIMAL_FORMAT).format(lastOrder.price) + "]");
 
 /**
  * Qui devo verificare in che caso siamo, 3 scenari possibili
@@ -235,68 +246,68 @@ public class AlwaysHighStrategy implements TradingStrategy {
  */
 
 
-      /**
-       * Scenario 1:
-       */
-      if (currentAskPrice.compareTo(lastOrder.price) < 0) {
-        LOG.warn("Scenario 1) : perdita");
+        /**
+         * Scenario 1:
+         */
+        if (currentAskPrice.compareTo(lastOrder.price) < 0) {
+          LOG.warn("Scenario 1) : perdita");
 
-        //prezzo al quale abbiamo comprato - minima perdita/100 * prezzo al quale abbiamo comprato
-        BigDecimal stopLossPrice = lastOrder.price.subtract(perditaMassimaPerc.multiply(lastOrder.price));
-        LOG.info("Prezzo di perdita massima è: [{}] al momento siamo a: [{}]", new DecimalFormat(DECIMAL_FORMAT).format(stopLossPrice), currentAskPrice);
+          //prezzo al quale abbiamo comprato - minima perdita/100 * prezzo al quale abbiamo comprato
+          BigDecimal stopLossPrice = lastOrder.price.subtract(perditaMassimaPerc.multiply(lastOrder.price));
+          LOG.info("Prezzo di perdita massima è: [{}] al momento siamo a: [{}]", new DecimalFormat(DECIMAL_FORMAT).format(stopLossPrice), currentAskPrice);
 
-        if (stopLossPrice.compareTo(currentAskPrice) < 0) {
-          LOG.info("Ok non è ancora il momento di vendere, la perdita è inferiore a quanto configurato");
-        } else {
-          LOG.info("La perdita ha superato il limite impostato..");
-
-          BigDecimal newAskPrice = lastOrder.price.subtract((perditaMassimaPerc.add(cuscinettoBuySell)).multiply(lastOrder.price));
-          LOG.info("Sto per inviare un ordine di vendita al prezzo: {}, di {} {}", new DecimalFormat(DECIMAL_FORMAT).format(newAskPrice), lastOrder.amount, market.getCounterCurrency());
-          lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.SELL, lastOrder.amount, newAskPrice);
-          LOG.info(() -> market.getName() + " Ordine inviato. ID: " + lastOrder.id);
-          BigDecimal pedita = (currentAskPrice.subtract(lastOrder.price)).multiply(lastOrder.amount);
-          LOG.info("perdita con quest'azione abbiamo perso: {} {}", new DecimalFormat(DECIMAL_FORMAT).format(pedita), market.getCounterCurrency());
-          lastOrder.type = OrderType.SELL;
-
-        }
-
-
-      } else if (currentAskPrice.compareTo(lastOrder.price) > 0) {
-
-
-        //prezzo al quale abbiamo comprato - minima perdita/100 * prezzo al quale abbiamo comprato
-        BigDecimal guadagnoMinimo = lastOrder.price.add(minimoGuadagnoPerc.multiply(lastOrder.price));
-        LOG.info("Il prezzo minimo di guadagno è: {} al momento siamo a: {}", new DecimalFormat(DECIMAL_FORMAT).format(guadagnoMinimo), currentAskPrice);
-
-        if (guadagnoMinimo.compareTo(currentAskPrice) > 0) {
-          LOG.info("Scenario 2) Target di guadagno % non raggiunto");
-        } else {
-          LOG.info("Scenario 3) prezzo massimo raggiunto al momento : {}", highiestPriceReached);
-          if (highiestPriceReached.compareTo(currentAskPrice) < 0) {
-            highiestPriceReached = currentAskPrice;
-            LOG.info("Nuovo massimo, valore aggiornato a: {}", currentAskPrice);
+          if (stopLossPrice.compareTo(currentAskPrice) < 0) {
+            LOG.info("Ok non è ancora il momento di vendere, la perdita è inferiore a quanto configurato");
           } else {
-            LOG.info("Prezzo al di sotto del massimo, verifiche condizioni di vendita");
-            BigDecimal prezzoSottoMinimo = highiestPriceReached.subtract(perditaSottoMassimoPerc.multiply(highiestPriceReached));
-            LOG.info("Il prezzo al quale attualmente dobbiamo vendere è: {} mentre il prezzo attuale è {} ", new DecimalFormat(DECIMAL_FORMAT).format(prezzoSottoMinimo), currentAskPrice);
-            if (currentAskPrice.compareTo(prezzoSottoMinimo) < 0) {
-              LOG.info("Scenario 4), vendita");
-              BigDecimal newAskPrice = highiestPriceReached.subtract((perditaMassimaPerc.add(cuscinettoBuySell)).multiply(highiestPriceReached));
-              LOG.info("Sto per inviare un ordine di vendita al prezzo: {}, di {} {}", new DecimalFormat(DECIMAL_FORMAT).format(newAskPrice), lastOrder.amount, market.getCounterCurrency());
-              lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.SELL, lastOrder.amount, newAskPrice);
-              LOG.info(() -> market.getName() + " Ordine inviato. ID: " + lastOrder.id);
-              BigDecimal guadagno = (currentAskPrice.subtract(lastOrder.price)).multiply(lastOrder.amount);
-              LOG.info("Guadagno con quest'azione abbiamo guadagnato: {} {}", new DecimalFormat(DECIMAL_FORMAT).format(guadagno), market.getCounterCurrency());
-              lastOrder.type = OrderType.SELL;
-              lastOrder.amount = lastOrder.amount;
+            LOG.info("La perdita ha superato il limite impostato..");
+
+            BigDecimal newAskPrice = lastOrder.price.subtract((perditaMassimaPerc.add(cuscinettoBuySell)).multiply(lastOrder.price));
+            LOG.info("Sto per inviare un ordine di vendita al prezzo: {}, di {} {}", new DecimalFormat(DECIMAL_FORMAT).format(newAskPrice), lastOrder.amount, market.getCounterCurrency());
+            lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.SELL, lastOrder.amount, newAskPrice);
+            LOG.info(() -> market.getName() + " Ordine inviato. ID: " + lastOrder.id);
+            BigDecimal pedita = (currentAskPrice.subtract(lastOrder.price)).multiply(lastOrder.amount);
+            LOG.info("perdita con quest'azione abbiamo perso: {} {}", new DecimalFormat(DECIMAL_FORMAT).format(pedita), market.getCounterCurrency());
+            lastOrder.type = OrderType.SELL;
+
+          }
+
+
+        } else if (currentAskPrice.compareTo(lastOrder.price) > 0) {
+
+
+          //prezzo al quale abbiamo comprato - minima perdita/100 * prezzo al quale abbiamo comprato
+          BigDecimal guadagnoMinimo = lastOrder.price.add(minimoGuadagnoPerc.multiply(lastOrder.price));
+          LOG.info("Il prezzo minimo di guadagno è: {} al momento siamo a: {}", new DecimalFormat(DECIMAL_FORMAT).format(guadagnoMinimo), currentAskPrice);
+
+          if (guadagnoMinimo.compareTo(currentAskPrice) > 0) {
+            LOG.info("Scenario 2) Target di guadagno % non raggiunto");
+          } else {
+            LOG.info("Scenario 3) prezzo massimo raggiunto al momento : {}", highiestPriceReached);
+            if (highiestPriceReached.compareTo(currentAskPrice) < 0) {
+              highiestPriceReached = currentAskPrice;
+              LOG.info("Nuovo massimo, valore aggiornato a: {}", currentAskPrice);
             } else {
-              LOG.info("Non sussistono le condizioni per vendere, sempre scenario 3)");
+              LOG.info("Prezzo al di sotto del massimo, verifiche condizioni di vendita");
+              BigDecimal prezzoSottoMinimo = highiestPriceReached.subtract(perditaSottoMassimoPerc.multiply(highiestPriceReached));
+              LOG.info("Il prezzo al quale attualmente dobbiamo vendere è: {} mentre il prezzo attuale è {} ", new DecimalFormat(DECIMAL_FORMAT).format(prezzoSottoMinimo), currentAskPrice);
+              if (currentAskPrice.compareTo(prezzoSottoMinimo) < 0) {
+                LOG.info("Scenario 4), vendita");
+                BigDecimal newAskPrice = highiestPriceReached.subtract((perditaMassimaPerc.add(cuscinettoBuySell)).multiply(highiestPriceReached));
+                LOG.info("Sto per inviare un ordine di vendita al prezzo: {}, di {} {}", new DecimalFormat(DECIMAL_FORMAT).format(newAskPrice), lastOrder.amount, market.getCounterCurrency());
+                lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.SELL, lastOrder.amount, newAskPrice);
+                LOG.info(() -> market.getName() + " Ordine inviato. ID: " + lastOrder.id);
+                BigDecimal guadagno = (currentAskPrice.subtract(lastOrder.price)).multiply(lastOrder.amount);
+                LOG.info("Guadagno con quest'azione abbiamo guadagnato: {} {}", new DecimalFormat(DECIMAL_FORMAT).format(guadagno), market.getCounterCurrency());
+                lastOrder.type = OrderType.SELL;
+                lastOrder.amount = lastOrder.amount;
+              } else {
+                LOG.info("Non sussistono le condizioni per vendere, sempre scenario 3)");
+              }
             }
           }
         }
+
       }
-
-
     } catch (ExchangeNetworkException e) {
       // Your timeout handling code could go here, e.g. you might want to check if the order
       // actually
