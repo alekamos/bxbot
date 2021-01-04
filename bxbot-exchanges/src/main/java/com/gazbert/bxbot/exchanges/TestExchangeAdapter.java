@@ -41,7 +41,7 @@ import java.util.*;
  * @author gazbert
  * @since 1.0
  */
-public final class TestExchangeAdapter extends BitstampExchangeAdapter {
+public final class TestExchangeAdapter extends KrakenExchangeAdapter {
 
   private static final String DUMMY_BALANCE = "100.00";
 
@@ -54,6 +54,7 @@ public final class TestExchangeAdapter extends BitstampExchangeAdapter {
     BigDecimal prezzoBid = bid.add(new BigDecimal(0.007).multiply(bid));
 
     List<OpenOrder> orders = new ArrayList<>();
+    /*
     final OpenOrder order =
             new OpenOrderImpl(
                     Long.toString(123456),
@@ -66,7 +67,7 @@ public final class TestExchangeAdapter extends BitstampExchangeAdapter {
                     null
             );
     orders.add(order);
-
+*/
 
     return orders;
   }
@@ -92,6 +93,7 @@ public final class TestExchangeAdapter extends BitstampExchangeAdapter {
     balancesAvailable.put("LTC", new BigDecimal(DUMMY_BALANCE));
     balancesAvailable.put("XRP", new BigDecimal(DUMMY_BALANCE));
     balancesAvailable.put("XXBT", new BigDecimal(DUMMY_BALANCE));
+    balancesAvailable.put("ZEUR", new BigDecimal(DUMMY_BALANCE));
 
     final Map<String, BigDecimal> balancesOnOrder = new HashMap<>();
     balancesOnOrder.put("BTC", new BigDecimal(DUMMY_BALANCE));
@@ -100,6 +102,7 @@ public final class TestExchangeAdapter extends BitstampExchangeAdapter {
     balancesOnOrder.put("LTC", new BigDecimal(DUMMY_BALANCE));
     balancesOnOrder.put("XRP", new BigDecimal(DUMMY_BALANCE));
     balancesOnOrder.put("XXBT", new BigDecimal(DUMMY_BALANCE));
+    balancesOnOrder.put("ZEUR", new BigDecimal(DUMMY_BALANCE));
 
     return new BalanceInfoImpl(balancesAvailable, balancesOnOrder);
   }

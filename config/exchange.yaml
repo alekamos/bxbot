@@ -16,12 +16,12 @@ exchange:
 
   # For the adapter value, you must specify the fully qualified name of your Exchange Adapter class so the Trading Engine
   # can load and execute it. The class must be on the runtime classpath.
-  adapter: com.gazbert.bxbot.exchanges.KrakenExchangeAdapter
+  adapter: com.gazbert.bxbot.exchanges.TestExchangeAdapter
 
   authenticationConfig:
     # See https://www.kraken.com/u/settings/api to get your Kraken Trading API credentials.
-    key:
-    secret: 
+    key: api
+    secret: api
 
   networkConfig:
     # This value is in SECONDS. It is the timeout value that the exchange adapter will wait on socket connect/socket read

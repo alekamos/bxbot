@@ -125,7 +125,7 @@ import org.apache.logging.log4j.Logger;
  * @author gazbert
  * @since 1.0
  */
-public final class KrakenExchangeAdapter extends AbstractExchangeAdapter
+public class KrakenExchangeAdapter extends AbstractExchangeAdapter
     implements ExchangeAdapter {
 
   private static final Logger LOG = LogManager.getLogger();
