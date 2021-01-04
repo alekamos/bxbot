@@ -489,6 +489,98 @@ public class TestKrakenExchangeAdapter extends AbstractExchangeAdapterTest {
 
   @Test
   @SuppressWarnings("unchecked")
+  public void testCreateMarketOrderToBuyIsSuccessful() throws Exception {
+    final byte[] encoded = Files.readAllBytes(Paths.get(ADD_ORDER_BUY_JSON_RESPONSE));
+    final AbstractExchangeAdapter.ExchangeHttpResponse exchangeResponse =
+            new AbstractExchangeAdapter.ExchangeHttpResponse(
+                    200, "OK", new String(encoded, StandardCharsets.UTF_8));
+
+    final Map<String, String> requestParamMap = PowerMock.createMock(Map.class);
+    expect(requestParamMap.put("pair", MARKET_ID)).andStubReturn(null);
+    expect(requestParamMap.put("type", "buy")).andStubReturn(null);
+    expect(requestParamMap.put("ordertype", "market")).andStubReturn(null);
+    expect(
+            requestParamMap.put(
+                    "volume",
+                    new DecimalFormat("#.########", getDecimalFormatSymbols())
+                            .format(BUY_ORDER_QUANTITY)))
+            .andStubReturn(null);
+
+    final KrakenExchangeAdapter exchangeAdapter =
+            PowerMock.createPartialMockAndInvokeDefaultConstructor(
+                    KrakenExchangeAdapter.class,
+                    MOCKED_SEND_AUTHENTICATED_REQUEST_TO_EXCHANGE_METHOD,
+                    MOCKED_CREATE_REQUEST_PARAM_MAP_METHOD);
+
+    PowerMock.expectPrivate(exchangeAdapter, MOCKED_CREATE_REQUEST_PARAM_MAP_METHOD)
+            .andReturn(requestParamMap);
+    PowerMock.expectPrivate(
+            exchangeAdapter,
+            MOCKED_SEND_AUTHENTICATED_REQUEST_TO_EXCHANGE_METHOD,
+            eq(ADD_ORDER),
+            eq(requestParamMap))
+            .andReturn(exchangeResponse);
+
+    PowerMock.replayAll();
+    exchangeAdapter.init(exchangeConfig);
+
+    final String orderId =
+            exchangeAdapter.createMarketOrder(MARKET_ID, OrderType.BUY, BUY_ORDER_QUANTITY);
+    assertEquals("OLD2Z4-L4C9H-MKH5BX", orderId);
+
+    PowerMock.verifyAll();
+  }
+
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testCreateMarketOrderToSellIsSuccessful() throws Exception {
+    final byte[] encoded = Files.readAllBytes(Paths.get(ADD_ORDER_BUY_JSON_RESPONSE));
+    final AbstractExchangeAdapter.ExchangeHttpResponse exchangeResponse =
+            new AbstractExchangeAdapter.ExchangeHttpResponse(
+                    200, "OK", new String(encoded, StandardCharsets.UTF_8));
+
+    final Map<String, String> requestParamMap = PowerMock.createMock(Map.class);
+    expect(requestParamMap.put("pair", MARKET_ID)).andStubReturn(null);
+    expect(requestParamMap.put("type", "sell")).andStubReturn(null);
+    expect(requestParamMap.put("ordertype", "market")).andStubReturn(null);
+    expect(
+            requestParamMap.put(
+                    "volume",
+                    new DecimalFormat("#.########", getDecimalFormatSymbols())
+                            .format(SELL_ORDER_QUANTITY)))
+            .andStubReturn(null);
+
+    final KrakenExchangeAdapter exchangeAdapter =
+            PowerMock.createPartialMockAndInvokeDefaultConstructor(
+                    KrakenExchangeAdapter.class,
+                    MOCKED_SEND_AUTHENTICATED_REQUEST_TO_EXCHANGE_METHOD,
+                    MOCKED_CREATE_REQUEST_PARAM_MAP_METHOD);
+
+    PowerMock.expectPrivate(exchangeAdapter, MOCKED_CREATE_REQUEST_PARAM_MAP_METHOD)
+            .andReturn(requestParamMap);
+    PowerMock.expectPrivate(
+            exchangeAdapter,
+            MOCKED_SEND_AUTHENTICATED_REQUEST_TO_EXCHANGE_METHOD,
+            eq(ADD_ORDER),
+            eq(requestParamMap))
+            .andReturn(exchangeResponse);
+
+    PowerMock.replayAll();
+    exchangeAdapter.init(exchangeConfig);
+
+    final String orderId =
+            exchangeAdapter.createMarketOrder(MARKET_ID, OrderType.SELL, SELL_ORDER_QUANTITY);
+    assertEquals("OLD2Z4-L4C9H-MKH5BX", orderId);
+
+    PowerMock.verifyAll();
+  }
+
+
+
+
+  @Test
+  @SuppressWarnings("unchecked")
   public void testCreateOrderToSellIsSuccessful() throws Exception {
     final byte[] encoded = Files.readAllBytes(Paths.get(ADD_ORDER_SELL_JSON_RESPONSE));
     final AbstractExchangeAdapter.ExchangeHttpResponse exchangeResponse =

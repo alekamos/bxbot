@@ -373,6 +373,83 @@ public class KrakenExchangeAdapter extends AbstractExchangeAdapter
   }
 
   @Override
+  public String createMarketOrder(
+          String marketId, OrderType orderType, BigDecimal quantity)
+          throws TradingApiException, ExchangeNetworkException {
+
+    ExchangeHttpResponse response;
+
+    try {
+      final Map<String, String> params = createRequestParamMap();
+      params.put("pair", marketId);
+
+      if (orderType == OrderType.BUY) {
+        params.put("type", "buy");
+      } else if (orderType == OrderType.SELL) {
+        params.put("type", "sell");
+      } else {
+        final String errorMsg =
+                "Invalid order type: "
+                        + orderType
+                        + " - Can only be "
+                        + OrderType.BUY.getStringValue()
+                        + " or "
+                        + OrderType.SELL.getStringValue();
+        LOG.error(errorMsg);
+        throw new IllegalArgumentException(errorMsg);
+      }
+
+      params.put("ordertype", "market");
+      params.put("volume", new DecimalFormat("#.########", getDecimalFormatSymbols()).format(quantity));
+
+      response = sendAuthenticatedRequestToExchange("AddOrder", params);
+      LOG.debug(() -> "Create Order response: " + response);
+
+      if (response.getStatusCode() == HttpURLConnection.HTTP_OK) {
+
+        final Type resultType = new TypeToken<KrakenResponse<KrakenAddOrderResult>>() {}.getType();
+        final KrakenResponse krakenResponse = gson.fromJson(response.getPayload(), resultType);
+
+        final List errors = krakenResponse.error;
+        if (errors == null || errors.isEmpty()) {
+
+          // Assume we'll always get something here if errors array is empty; else blow fast wih NPE
+          final KrakenAddOrderResult krakenAddOrderResult =
+                  (KrakenAddOrderResult) krakenResponse.result;
+
+          // Just return the first one. Why an array?
+          return krakenAddOrderResult.txid.get(0);
+
+        } else {
+          if (isExchangeUndergoingMaintenance(response) && keepAliveDuringMaintenance) {
+            LOG.warn(() -> UNDER_MAINTENANCE_WARNING_MESSAGE);
+            throw new ExchangeNetworkException(UNDER_MAINTENANCE_WARNING_MESSAGE);
+          }
+
+          final String errorMsg = FAILED_TO_ADD_ORDER + response;
+          LOG.error(errorMsg);
+          throw new TradingApiException(errorMsg);
+        }
+
+      } else {
+        final String errorMsg = FAILED_TO_ADD_ORDER + response;
+        LOG.error(errorMsg);
+        throw new TradingApiException(errorMsg);
+      }
+
+    } catch (ExchangeNetworkException | TradingApiException e) {
+      throw e;
+
+    } catch (Exception e) {
+      LOG.error(UNEXPECTED_ERROR_MSG, e);
+      throw new TradingApiException(UNEXPECTED_ERROR_MSG, e);
+    }
+  }
+
+
+
+
+  @Override
   public boolean cancelOrder(String orderId, String marketIdNotNeeded)
       throws TradingApiException, ExchangeNetworkException {
     ExchangeHttpResponse response;

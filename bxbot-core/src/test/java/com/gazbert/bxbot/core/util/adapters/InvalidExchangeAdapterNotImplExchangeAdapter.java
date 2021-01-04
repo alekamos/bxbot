@@ -23,11 +23,8 @@
 
 package com.gazbert.bxbot.core.util.adapters;
 
-import com.gazbert.bxbot.trading.api.BalanceInfo;
-import com.gazbert.bxbot.trading.api.MarketOrderBook;
-import com.gazbert.bxbot.trading.api.OpenOrder;
-import com.gazbert.bxbot.trading.api.OrderType;
-import com.gazbert.bxbot.trading.api.TradingApi;
+import com.gazbert.bxbot.trading.api.*;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -55,6 +52,11 @@ public class InvalidExchangeAdapterNotImplExchangeAdapter implements TradingApi 
   @Override
   public String createOrder(
       String marketId, OrderType orderType, BigDecimal quantity, BigDecimal price) {
+    return null;
+  }
+
+  @Override
+  public String createMarketOrder(String marketId, OrderType orderType, BigDecimal quantity) throws ExchangeNetworkException, TradingApiException {
     return null;
   }
 

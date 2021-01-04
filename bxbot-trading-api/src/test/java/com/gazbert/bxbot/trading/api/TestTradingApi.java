@@ -86,6 +86,12 @@ public class TestTradingApi {
     }
 
     @Override
+    public String createMarketOrder(
+            String marketId, OrderType orderType, BigDecimal quantity) {
+      return null;
+    }
+
+    @Override
     public boolean cancelOrder(String orderId, String marketId) {
       return false;
     }

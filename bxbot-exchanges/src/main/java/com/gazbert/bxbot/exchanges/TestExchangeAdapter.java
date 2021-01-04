@@ -78,6 +78,12 @@ public final class TestExchangeAdapter extends KrakenExchangeAdapter {
     return "DUMMY_ORDER_ID: " + UUID.randomUUID().toString();
   }
 
+  @Override
+  public String createMarketOrder(
+          String marketId, OrderType orderType, BigDecimal quantity) {
+    return "DUMMY_MARKET_ORDER: " + UUID.randomUUID().toString();
+  }
+
   /* marketId is not needed for cancelling orders on this exchange.*/
   @Override
   public boolean cancelOrder(String orderId, String marketIdNotNeeded) {

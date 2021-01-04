@@ -60,7 +60,6 @@ public class AlwaysHighStrategy implements TradingStrategy {
   private BigDecimal perditaMassimaPerc;
   private BigDecimal perditaSottoMassimoPerc;
   private BigDecimal highiestPriceReached = new BigDecimal(0);
-  private BigDecimal margineBuySell = new BigDecimal(0.005);
 
 
   /**
@@ -174,12 +173,10 @@ public class AlwaysHighStrategy implements TradingStrategy {
 
       final BigDecimal amountOfBaseCurrencyToBuy = getAmountOfBaseCurrencyToBuyForGivenCounterCurrencyAmount(counterCurrencyBuyOrderAmount);
 
-      // Offro qualcosina in più per vendere subito
-      BigDecimal newBidPrice = currentBidPrice.add(currentBidPrice.multiply(margineBuySell)).setScale(2,RoundingMode.HALF_UP);
 
-      LOG.info("Sto per inviare un ordine di [{} {}] ovvero di [{} {}] al prezzo di: [{} {}] bidPrice [{} {}]",new DecimalFormat(DECIMAL_FORMAT).format(amountOfBaseCurrencyToBuy),market.getBaseCurrency(),new DecimalFormat(DECIMAL_FORMAT).format(counterCurrencyBuyOrderAmount),market.getCounterCurrency(),new DecimalFormat(DECIMAL_FORMAT).format(newBidPrice),market.getCounterCurrency(),currentBidPrice,market.getCounterCurrency());
+      LOG.info("Sto per inviare un ordine di [{} {}] ovvero di [{} {}] al prezzo di: [{} {}]",new DecimalFormat(DECIMAL_FORMAT).format(amountOfBaseCurrencyToBuy),market.getBaseCurrency(),new DecimalFormat(DECIMAL_FORMAT).format(counterCurrencyBuyOrderAmount),market.getCounterCurrency(),new DecimalFormat(DECIMAL_FORMAT).format(currentBidPrice),market.getCounterCurrency());
 
-      lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.BUY, amountOfBaseCurrencyToBuy, newBidPrice);
+      lastOrder.id = tradingApi.createMarketOrder(market.getId(), OrderType.BUY, amountOfBaseCurrencyToBuy);
 
       LOG.info("Ordine eseguito con id: {})",lastOrder.id);
 
@@ -263,10 +260,8 @@ public class AlwaysHighStrategy implements TradingStrategy {
             LOG.info("Perdita inferiore a quanto configurato perdita attuale: [{} {}]",perditaString,market.getCounterCurrency());
           } else {
             LOG.info("La perdita ha superato il limite impostato..");
-            //vendo ad un prezzo ancora inferiore per far eseguire subito l'ordine
-            BigDecimal newAskPrice = currentAskPrice.subtract(currentAskPrice.multiply(margineBuySell)).setScale(2,RoundingMode.HALF_UP);
-            LOG.info("Sto per inviare un ordine di vendita al prezzo: {}, di [{} {}] currentAskPrice {}", new DecimalFormat(DECIMAL_FORMAT).format(newAskPrice), lastOrder.amount, market.getBaseCurrency(),currentAskPrice);
-            lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.SELL, lastOrder.amount, currentAskPrice);
+            LOG.info("Sto per inviare un ordine di vendita al prezzo: {}, di [{} {}] currentAskPrice {}", new DecimalFormat(DECIMAL_FORMAT).format(currentAskPrice), lastOrder.amount, market.getBaseCurrency(),currentAskPrice);
+            lastOrder.id = tradingApi.createMarketOrder(market.getId(), OrderType.SELL, lastOrder.amount);
             LOG.info(() -> market.getName() + " Ordine inviato. ID: " + lastOrder.id);
 
             LOG.info("LOSS!!! Perdita con quest'azione abbiamo perso: [{} {}]", perditaString, market.getCounterCurrency());
@@ -296,9 +291,8 @@ public class AlwaysHighStrategy implements TradingStrategy {
               LOG.info("Prezzo target vendita: [{} {}] attuale [{} {}] ", new DecimalFormat(DECIMAL_FORMAT).format(prezzoSottoMinimo),market.getCounterCurrency(), currentAskPrice,market.getCounterCurrency());
               if (currentAskPrice.compareTo(prezzoSottoMinimo) < 0) {
                 LOG.info("Condizioni di vendita raggiunte");
-                BigDecimal newAskPrice = currentAskPrice.subtract(currentAskPrice.multiply(margineBuySell)).setScale(2,RoundingMode.HALF_UP);
-                LOG.info("Sto per inviare un ordine di vendita al prezzo: [{} {}], di [{} {}]  currentAskPrice [{} {}]", new DecimalFormat(DECIMAL_FORMAT).format(newAskPrice),market.getCounterCurrency(), lastOrder.amount, market.getBaseCurrency(),currentAskPrice,market.getCounterCurrency());
-                lastOrder.id = tradingApi.createOrder(market.getId(), OrderType.SELL, lastOrder.amount, currentAskPrice);
+                LOG.info("Sto per inviare un ordine di vendita al prezzo: [{} {}], di [{} {}]", new DecimalFormat(DECIMAL_FORMAT).format(currentAskPrice),market.getCounterCurrency(), lastOrder.amount, market.getBaseCurrency());
+                lastOrder.id = tradingApi.createMarketOrder(market.getId(), OrderType.SELL, lastOrder.amount);
                 LOG.info(() -> market.getName() + " Ordine inviato. ID: " + lastOrder.id);
 
                 LOG.info("GAIN! guadagno azione : [{} {}]", guadagnoString, market.getCounterCurrency());

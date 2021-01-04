@@ -119,6 +119,27 @@ public interface TradingApi {
   String createOrder(String marketId, OrderType orderType, BigDecimal quantity, BigDecimal price)
       throws ExchangeNetworkException, TradingApiException;
 
+
+  /**
+   * Places an order on the exchange.
+   *
+   * @param marketId the id of the market.
+   * @param orderType Value must be {@link OrderType#BUY} or {@link OrderType#SELL}.
+   * @param quantity amount of units you are buying/selling in this order.
+   * @return the id of the order.
+   * @throws ExchangeNetworkException if a network error occurred trying to connect to the exchange.
+   *     This is implementation specific for each Exchange Adapter - see the documentation for the
+   *     adapter you are using. You could retry the API call, or exit from your Trading Strategy and
+   *     let the Trading Engine execute your Trading Strategy at the next trade cycle.
+   * @throws TradingApiException if the API call failed for any reason other than a network error.
+   *     This means something bad as happened; you would probably want to wrap this exception in a
+   *     StrategyException and let the Trading Engine shutdown the bot immediately to prevent
+   *     unexpected losses.
+   * @since 1.0
+   */
+  String createMarketOrder(String marketId, OrderType orderType, BigDecimal quantity)
+          throws ExchangeNetworkException, TradingApiException;
+
   /**
    * Cancels your existing order on the exchange.
    *
